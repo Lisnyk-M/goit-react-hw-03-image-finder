@@ -18,22 +18,21 @@ export default class App extends Component {
         page: 1,
         showModal: false,
         modalImagePath: '',
-        didFounded: false,
+        didFound: false,
     };
 
     componentDidUpdate(prevProps, prevState) {
         const prevQuery = prevState.searchQuery;
         const nextQuery = this.state.searchQuery;
 
-        console.log('Текущая прокрутка сверху: ' + window.pageYOffset);
-        if (prevQuery !== nextQuery) {
-            this.fetchArticles();
+        // console.log('Текущая прокрутка сверху: ' + window.pageYOffset);
+        if (prevQuery !== nextQuery && nextQuery !== '') {
+            // this.fetchArticles();
         }
     }
 
     fetchArticles = (gridGapImage = 16, perPage = 12) => {
-        this.setState({ showModal: true });
-        this.setState({ loading: true });
+        this.setState({didFound: true, showModal: true, loading: true });        
         const { searchQuery, page, articles } = this.state;
 
         articlesApi.fetchArticlesWithQuery(searchQuery, page, perPage)
@@ -45,8 +44,7 @@ export default class App extends Component {
                 this.setState({ error });
             })
             .finally(() => {
-                this.setState({ loading: false })
-                this.setState({ showModal: false, didFounded: true });
+                this.setState({  loading: false, showModal: false, didFound: true });
                 if (articles.length > 0) {
                     let scrollHeight = Math.max(
                         document.body.scrollHeight, document.documentElement.scrollHeight,
@@ -70,12 +68,14 @@ export default class App extends Component {
                         top: scrollHeight - liOffset,
                         behavior: 'smooth',
                     });
+                } else {
+                    this.setState({ notFound: true });
                 }
             });
     }
 
     handleSearchFormSubmit = query => {
-        this.setState({ searchQuery: query, page: 1, articles: [] })
+        this.setState({ searchQuery: query, page: 1, articles: [] }, () => this.fetchArticles());
     }
 
     toggleModal = () => {
@@ -94,14 +94,14 @@ export default class App extends Component {
         this.setState({ showModal: true, modalImagePath: articles[filtered].largeImageURL });
     }
 
-    render() {      
-        const { articles, loading, showModal, didFounded } = this.state;
+    render() {
+        const { articles, loading, showModal, didFound} = this.state;
 
         return (
-            <div className={styles.App}> 
+            <div className={styles.App}>
                 <SearchBar onSubmit={this.handleSearchFormSubmit} />
                 <ImageGallery images={articles} onClick={this.showModal} />
-                {didFounded && articles.length === 0 && <Notification message="Not found"/>}
+                {articles.length === 0 && didFound && !showModal && <Notification message="Not found" />}
                 {!loading && articles.length > 1 &&
                     <div className={styles.ButtonWrap}>
                         <Button name="Load more" onClick={this.fetchArticles} />
